@@ -13,6 +13,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
 import numpy as np
 
+from cpu_utils import get_file, process_df, process_names
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=20)
 
@@ -22,50 +24,25 @@ if __name__ == '__main__':
     csvfile = sys.argv[1]
     logger.debug("analysing cpu performance from CSV: %s", csvfile)
     #
-    if not os.path.exists(csvfile):
-        logger.warning("file does not exist")
-        exit()
-    df = pd.read_csv(csvfile, parse_dates=['Timestamp'], dayfirst=True)
-    df['CPU'] = df.CPU.astype(float)
-    df['Process'] = df.Process.apply(lambda x: x.lower())
-    # first plot - CPU usage over time
-    cpu_ave = df.groupby('Timestamp').apply(lambda x: sum(x.CPU)) # / 400.
-    # specific processes
-    process_names = ["VShieldScanner", "CyOptics", "Microsoft", "Google", "Skype",
-                     "snowagent", "jamfdaemon", 'pycharm',
-                     "com.docker.hyperkit" , 'teams', 'windowserver']
-    process_names = [x.lower() for x in process_names]
-    # get anything else in the top ten
-    # process_names += [ x.lower() for x in df.Process.value_counts().index[:10] ]
-    # remove duplicates
-    process_names = sorted(list(set(process_names)))
+    df = get_file(csvfile)
 
-    df_dict = dict()
-    for process_name in process_names:
-        df_dict[process_name] = df[df['Process'] == process_name].groupby('Timestamp').apply(
-            lambda x: sum(x.CPU)) # / 400.
-        logger.warning(df_dict[process_name].shape)
+    df_dict = process_df(df)
 
     base, filename = os.path.split(csvfile)
+
     with PdfPages(f"cpu_analysis_of_{filename}.pdf") as pdf:
-        # fig = plt.figure()
-        cpu_ave.plot(label="Total")
-        plt.xlabel("Time")
-        plt.ylabel("total CPU usage (%)")
-        plt.title("total CPU usage over time")
-        plt.tight_layout()
-        pdf.savefig()
         # timeseries
         plt.clf()
         for process_name in process_names:
             cpu_ave_data = df_dict[process_name]
+            print(cpu_ave_data.head())
             if cpu_ave_data.shape[0] == 0:
                 continue
             else:
                 cpu_ave_data.plot(label=process_name)
         plt.xlabel("Time")
         plt.ylabel("total CPU usage (%)")
-        plt.legend()
+        plt.legend(prop={'size': 6})
         plt.title("Process CPU total")
         plt.tight_layout()
         pdf.savefig()
@@ -79,7 +56,7 @@ if __name__ == '__main__':
                 cpu_ave_data.plot(label=process_name)
         plt.xlabel("Time")
         plt.ylabel("total CPU usage (%)")
-        plt.legend()
+        plt.legend(prop={'size': 6})
         plt.title("Process CPU average - rolling")
         plt.tight_layout()
         pdf.savefig()
