@@ -23,7 +23,8 @@ logging.basicConfig(level=10)
 
 process_names = ["VShieldScanner", "CyOptics", "Microsoft", "Google", "Skype",
                  "snowagent", "jamfdaemon", 'pycharm',
-                 "com.docker.hyperkit", 'teams', 'windowserver', 'mds_stores', 'kernel_task', 'AgentService']
+                 "com.docker.hyperkit", 'teams', 'windowserver', 'mds_stores', 'kernel_task', 'AgentService',
+                 'mdworker_shared', 'system_profiler', 'iTerm2', 'edpa', 'nxtsvc']
 process_names = [x.lower() for x in process_names]
 
 
