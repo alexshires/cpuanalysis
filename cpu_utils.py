@@ -64,7 +64,7 @@ def process_df(df: pd.DataFrame) -> Dict:
         tmp_df = df[df['Process'] == process_name].groupby('Timestamp').apply(
             lambda x: sum(x.CPU))  # / 400.
         logger.warning(tmp_df.shape) # df_dict[process_name].shape)
-        #if tmp_df.shape[0] > 50:
-        df_dict[process_name] = tmp_df
+        if tmp_df.shape[0] > 100:
+            df_dict[process_name] = tmp_df
     print(df_dict.keys())
     return df_dict

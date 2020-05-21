@@ -33,7 +33,7 @@ if __name__ == '__main__':
     with PdfPages(f"cpu_analysis_of_{filename}.pdf") as pdf:
         # timeseries
         plt.clf()
-        for process_name in process_names:
+        for process_name in df_dict.keys():
             cpu_ave_data = df_dict[process_name]
             print(cpu_ave_data.head())
             if cpu_ave_data.shape[0] == 0:
@@ -48,7 +48,7 @@ if __name__ == '__main__':
         pdf.savefig()
         # Rolling means
         plt.clf()
-        for process_name in process_names:
+        for process_name in df_dict.keys():
             cpu_ave_data = df_dict[process_name].rolling(window=40).mean()
             if cpu_ave_data.shape[0] == 0:
                 continue
@@ -76,7 +76,7 @@ if __name__ == '__main__':
         # 2D histograms
         plt.clf()
         #
-        for process_name in process_names:
+        for process_name in df_dict.keys():
             cpu_ave_data = df_dict[process_name]
             if cpu_ave_data.shape[0] == 0:
                 continue

@@ -39,7 +39,7 @@ if __name__ == '__main__':
     legend2 = file2[:-4].split("_")[1]
 
     with PdfPages(f"cpu_comparison_of_{legend1}_{legend2}.pdf") as pdf:
-        for process_name in process_names:
+        for process_name in df1_dict.keys():
             cpu_ave_data1 = df1_dict[process_name].rolling(window=40).mean()
             if cpu_ave_data1.shape[0] == 0:
                 continue
@@ -53,7 +53,7 @@ if __name__ == '__main__':
         pdf.savefig()
         plt.clf()
         # rolling 2
-        for process_name in process_names:
+        for process_name in df2_dict.keys():
             cpu_ave_data2 = df2_dict[process_name].rolling(window=40).mean()
             if cpu_ave_data2.shape[0] == 0:
                 continue
@@ -68,6 +68,8 @@ if __name__ == '__main__':
         plt.clf()
         # histograms
         for process_name in process_names:
+            if process_name not in df1_dict.keys() or process_name not in df2_dict.keys():
+                continue
             cpu_ave_data1 = df1_dict[process_name]
             cpu_ave_data2 = df2_dict[process_name]
             if cpu_ave_data1.shape[0] == 0 or cpu_ave_data2.shape[0] == 0:
