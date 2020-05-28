@@ -18,6 +18,7 @@ do
     do
         cpu=$(echo "${line}" | awk '{print $3}')
         process=$(echo "${line}" | awk '{print $11}')
+        # need more names of process??
         timestamp=$(date +"%Y-%m-%d %H:%M:%S")
 
         if (( $(echo "${cpu} >= ${threshold}" | bc -l) ))
