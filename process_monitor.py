@@ -11,7 +11,12 @@ from datetime import datetime
 import pandas as pd
 import time
 import os
-import ipdb
+# import ipdb
+import logging
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+logger.setLevel(10)
 
 
 def get_size(bytes):
@@ -52,8 +57,9 @@ def get_processes_info():
                 cores = 0
             # get the CPU usage percentage
             try:
-                cpu_usage = process.cpu_percent()
+                cpu_usage = process.cpu_percent(interval=None)
             except psutil.ZombieProcess:
+                # print("zombie")
                 cpu_usage = 0
             # get the status of the process (running, idle, etc.)
             status = process.status()
@@ -87,7 +93,7 @@ def get_processes_info():
                 username = "N/A"
             except psutil.ZombieProcess:
                 username = "N/A"
-
+        # print(pid, name, cpu_usage)
         processes.append({
             'pid': pid, 'name': name, 'create_time': create_time,
             'cores': cores, 'cpu_usage': cpu_usage, 'status': status, 'nice': nice,
@@ -103,8 +109,10 @@ def construct_dataframe(processes):
     df = pd.DataFrame(processes)
     # set the process id as index of a process
     df.set_index('pid', inplace=True)
+    # print(df.head())
     # sort rows by the column passed as argument
-    df.sort_values("cpu_usage", ascending=False, inplace=True) #  sort_by, inplace=True, ascending=not descending)
+    df.sort_values(by=["cpu_usage"], ascending=False, inplace=True) #  sort_by, inplace=True, ascending=not descending)
+    logger.debug(df.describe())
     # pretty printing bytes
     df['memory_usage'] = df['memory_usage'].apply(get_size)
     df['write_bytes'] = df['write_bytes'].apply(get_size)
@@ -146,27 +154,43 @@ if __name__ == "__main__":
     processes = get_processes_info()
     df = construct_dataframe(processes)
     if n == 0:
-        print(df.to_string())
+        logger.debug(df.to_string())
     elif n > 0:
-        print(df.head(n).to_string())
+        logger.debug(df.head(n).to_string())
     # print continuously
     date_str = datetime.now().strftime("%Y-%m-%d")
     filename = f"{args.filename}_{date_str}_logs.csv"
-    with open(filename, 'a+') as f:
-        df[df.cpu_usage > args.threshold].to_csv(path_or_buf=f, header=True)
-
+    subdf = df[df.cpu_usage > args.threshold]
+    if not os.path.exists(filename) and subdf.shape[0] > 0:
+        with open(filename, 'a+') as f:
+            subdf.to_csv(path_or_buf=f, header=True)
+    elif subdf.shape[0] > 0:
+        with open(filename, 'a+') as f:
+            subdf.to_csv(path_or_buf=f, header=False)
+    continue_int = 0
     while live_update:
         # get all process info
-        processes = get_processes_info()
-        df = construct_dataframe(processes)
-        # clear the screen depending on your OS
-        os.system("cls") if "nt" in os.name else os.system("clear")
-        if n == 0:
-            print(df.to_string())
-        elif n > 0:
-            print(df.head(n).to_string())
-        # write to CSV
-        with open(filename, 'a+') as f:
-            df[df.cpu_usage > args.threshold].to_csv(path_or_buf=f, header=False)
-        # ipdb.set_trace()
-        time.sleep(15)
+        try:
+            processes = get_processes_info()
+            df = construct_dataframe(processes)
+            # clear the screen depending on your OS
+            os.system("cls") if "nt" in os.name else os.system("clear")
+            if n == 0:
+                logger.debug(df.to_string())
+            elif n > 0:
+                logger.debug(df.head(n).to_string())
+            # write to CSV
+            subdf = df[df.cpu_usage > args.threshold]
+            if subdf.shape[0] > 0:
+                with open(filename, 'a+') as f:
+                    subdf.to_csv(path_or_buf=f, header=False)
+            # ipdb.set_trace()
+            time.sleep(15)
+        except (psutil.AccessDenied, KeyError, ProcessLookupError, RuntimeError) as e:
+            logger.error(e)
+            time.sleep(1)
+            continue_int += 1
+            if continue_int > 100:
+                break
+            else:
+                continue
